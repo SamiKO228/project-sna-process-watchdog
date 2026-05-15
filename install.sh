@@ -1,28 +1,58 @@
 #!/bin/bash
 
+# --- PATH VARIABLES (Can be adjusted for your system) ---
+# Project source directory (auto-detects script location)
+REPO_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Installation destinations
+BIN_DEST="/usr/local/bin"
+CONF_DEST="/etc/watchdog"
+SERVICE_DEST="/etc/systemd/system"
+LOG_DEST="/var/log"
+
+# File names
+SCRIPT_NAME="watchdog.sh"
+CONF_NAME="watchdog.conf"
+SERVICE_NAME="watchdog.service"
+
+# --- CHECKS ---
 if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root (use sudo)"
+   echo "Error: This script must be run as root (use sudo)"
    exit 1
 fi
 
-echo "Installing Process Watchdog..."
+# Check if source files exist before copying
+for file in "$SCRIPT_NAME" "$CONF_NAME" "$SERVICE_NAME"; do
+    if [ ! -f "$REPO_DIR/$file" ]; then
+        echo "Error: Source file $REPO_DIR/$file not found!"
+        exit 1
+    fi
+done
 
-# 1. Create needed folders
-mkdir -p /etc/watchdog
-touch /var/log/watchdog.log
-touch /var/log/watchdog_alerts.log
+echo "Starting installation of Process Watchdog..."
 
-# 2. Copy the files (considering you're in root)
-cp watchdog.sh /usr/local/bin/
-cp watchdog.conf /etc/watchdog/
-cp watchdog.service /etc/systemd/system/
+# 1. Create directory structure and logs
+mkdir -p "$CONF_DEST"
+touch "$LOG_DEST/watchdog.log"
+touch "$LOG_DEST/watchdog_alerts.log"
 
-# 3. Set the rights
-chmod +x /usr/local/bin/watchdog.sh
+# 2. Copy files
+echo "Copying files from $REPO_DIR..."
+cp "$REPO_DIR/$SCRIPT_NAME" "$BIN_DEST/"
+cp "$REPO_DIR/$CONF_NAME" "$CONF_DEST/"
+cp "$REPO_DIR/$SERVICE_NAME" "$SERVICE_DEST/"
 
-# 4. Restart the systemd daemon and start the service
+# 3. Set permissions
+chmod +x "$BIN_DEST/$SCRIPT_NAME"
+
+# 4. Register in Systemd
+echo "Registering systemd service..."
 systemctl daemon-reload
-systemctl enable watchdog.service
-systemctl restart watchdog.service
+systemctl enable "$SERVICE_NAME"
+systemctl restart "$SERVICE_NAME"
 
-echo "Watchdog installed and started! Check status: systemctl status watchdog"
+echo "------------------------------------------------"
+echo "Installation Complete!"
+echo "Configuration: $CONF_DEST/$CONF_NAME"
+echo "Log file:      $LOG_DEST/watchdog.log"
+echo "Service Status: systemctl status $SERVICE_NAME"
