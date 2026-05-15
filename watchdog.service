@@ -1,1 +1,14 @@
+[Unit]
+Description=SNA Process Watchdog Service
+After=network.target
 
+[Service]
+# Path to the executable script after installation
+ExecStart=/usr/local/bin/watchdog.sh
+Restart=always
+User=root
+# Environment variables if needed by the script
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
