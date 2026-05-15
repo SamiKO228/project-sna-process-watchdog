@@ -60,6 +60,3 @@ tail -f /var/log/watchdog.log
 ```bash
 cat /var/log/watchdog_alerts.log
 ```
-
-## License
-University Project (Educational Use Only)
